@@ -31,6 +31,16 @@ Playwright is optional and only needed if a future page becomes JavaScript-only:
 
 ## Run
 
+Local browser GUI:
+
+```powershell
+.\.venv\Scripts\python.exe -m car_listing_audit.web_gui
+```
+
+This starts a local-only server at `http://127.0.0.1:8765/` and opens it in your browser.
+
+Command line:
+
 ```powershell
 .\.venv\Scripts\python.exe -m car_listing_audit.bob_ruth_scraper
 ```
@@ -91,6 +101,7 @@ The code is split so it can grow without becoming a one-off script:
 - `polite_http.py` owns robots checks and request pacing.
 - `parsing.py` owns HTML and JSON-LD extraction.
 - `bob_ruth_scraper.py` owns the command-line workflow.
+- `web_gui.py` owns the local browser interface and calls the same scraper workflow.
 
 No secrets are required. Do not add API keys, cookies, dealership admin credentials, or authenticated scraping flows to this repo. Generated CSV files are ignored by default because inventory snapshots are time-sensitive and should be regenerated for each audit.
 
@@ -123,4 +134,3 @@ git checkout -b codex/<short-change-name>
 ```
 
 Open a draft PR when a GitHub remote exists. Keep generated CSV snapshots out of the PR unless there is a specific review reason to include one.
-

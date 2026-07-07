@@ -1,4 +1,5 @@
 from car_listing_audit.models import VehicleListing
+from car_listing_audit.bob_ruth_scraper import collect_listings
 from car_listing_audit.parsing import (
     detect_acc_keywords,
     merge_detail_page,
@@ -92,3 +93,51 @@ def test_merge_detail_page_prefers_structured_data_and_features() -> None:
     assert listing.has_acc_keyword == "true"
     assert listing.acc_keyword_matches == "adaptive cruise control"
 
+
+def test_collect_listings_reports_progress_when_dependencies_are_mocked(monkeypatch) -> None:
+    class FakeRobotsPolicy:
+        @classmethod
+        def load(cls, base_url, session):
+            return cls()
+
+    class FakeResponse:
+        text = "<html></html>"
+
+        def raise_for_status(self):
+            return None
+
+    class FakeSession:
+        def __init__(self, delay_seconds):
+            self.delay_seconds = delay_seconds
+
+        def get(self, url, robots):
+            return FakeResponse()
+
+    def fake_parse_inventory_page(html, page_url):
+        listing = VehicleListing(
+            listing_url="https://example.test/detail",
+            feature_text="Adaptive cruise control",
+        )
+        return [listing], None
+
+    def fake_merge_detail_page(listing, html, detail_url):
+        listing.vin = "TESTVIN1234567890"
+        return listing
+
+    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.RobotsPolicy", FakeRobotsPolicy)
+    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.PoliteSession", FakeSession)
+    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.parse_inventory_page", fake_parse_inventory_page)
+    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.merge_detail_page", fake_merge_detail_page)
+
+    messages = []
+    listings = collect_listings(
+        start_url="https://example.test/used",
+        max_listings=1,
+        progress_callback=messages.append,
+    )
+
+    assert len(listings) == 1
+    assert listings[0].vin == "TESTVIN1234567890"
+    assert any("Fetching inventory page" in message for message in messages)
+    assert any("Fetching detail page 1/1" in message for message in messages)
+    assert messages[-1] == "Collected 1 listings"

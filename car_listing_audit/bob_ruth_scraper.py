@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 from pathlib import Path
+from collections.abc import Callable
 
 from .models import CSV_COLUMNS, VehicleListing
 from .parsing import apply_acc_detection, merge_detail_page, parse_inventory_page
@@ -19,8 +20,14 @@ def collect_listings(
     delay_seconds: float = 2.0,
     visit_detail_pages: bool = True,
     use_playwright_fallback: bool = True,
+    progress_callback: Callable[[str], None] | None = None,
 ) -> list[VehicleListing]:
+    def report(message: str) -> None:
+        if progress_callback:
+            progress_callback(message)
+
     session = PoliteSession(delay_seconds=delay_seconds)
+    report("Loading robots.txt")
     robots = RobotsPolicy.load(same_site_base(start_url), session)
 
     listings: list[VehicleListing] = []
@@ -28,11 +35,13 @@ def collect_listings(
     next_url: str | None = start_url
 
     while next_url and len(listings) < max_listings:
+        report(f"Fetching inventory page: {next_url}")
         response = session.get(next_url, robots)
         response.raise_for_status()
         page_listings, discovered_next_url = parse_inventory_page(response.text, next_url)
 
         if not page_listings and use_playwright_fallback:
+            report("Static HTML had no listings; trying Playwright fallback")
             rendered_html = render_with_playwright(next_url, robots)
             page_listings, discovered_next_url = parse_inventory_page(rendered_html, next_url)
 
@@ -47,10 +56,11 @@ def collect_listings(
         next_url = discovered_next_url
 
     if visit_detail_pages:
-        for listing in listings:
+        for index, listing in enumerate(listings, start=1):
             if not listing.listing_url:
                 apply_acc_detection(listing)
                 continue
+            report(f"Fetching detail page {index}/{len(listings)}: {listing.listing_url}")
             detail_response = session.get(listing.listing_url, robots)
             detail_response.raise_for_status()
             merge_detail_page(listing, detail_response.text, listing.listing_url)
@@ -58,6 +68,7 @@ def collect_listings(
         for listing in listings:
             apply_acc_detection(listing)
 
+    report(f"Collected {len(listings)} listings")
     return listings
 
 
@@ -115,4 +126,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
