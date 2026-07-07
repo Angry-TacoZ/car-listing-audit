@@ -25,6 +25,15 @@ def test_parse_run_form_rejects_too_fast_delay() -> None:
         raise AssertionError("Expected delay validation to fail")
 
 
+def test_parse_run_form_requires_inventory_url() -> None:
+    try:
+        parse_run_form("max_listings=3&delay_seconds=2")
+    except ValueError as exc:
+        assert "Inventory URL is required" in str(exc)
+    else:
+        raise AssertionError("Expected inventory URL validation to fail")
+
+
 def test_render_page_includes_listing_preview() -> None:
     listing = VehicleListing(
         dealer_name="Example Dealer",

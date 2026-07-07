@@ -119,7 +119,7 @@ td.long {
 
 
 def render_page(
-    start_url: str = START_URL,
+    start_url: str = "",
     output_path: str = DEFAULT_OUTPUT,
     max_listings: int = 50,
     delay_seconds: float = 2.0,
@@ -196,8 +196,11 @@ def parse_run_form(body: str) -> dict[str, object]:
         raise ValueError("Max listings must be between 1 and 50.")
     if delay_seconds < 2.0:
         raise ValueError("Delay must be at least 2 seconds.")
+    start_url = _first(fields, "start_url", "").strip()
+    if not start_url:
+        raise ValueError("Inventory URL is required.")
     return {
-        "start_url": _first(fields, "start_url", START_URL).strip(),
+        "start_url": start_url,
         "output_path": _first(fields, "output_path", DEFAULT_OUTPUT).strip(),
         "max_listings": max_listings,
         "delay_seconds": delay_seconds,
