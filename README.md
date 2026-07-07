@@ -2,7 +2,9 @@
 
 Python MVP scraper for building a manual-review CSV from public used-car inventory pages.
 
-The included example target is:
+The tool is designed to help audit whether a used-car listing appears to mention adaptive cruise control or related feature names, then produce a spreadsheet for manual verification. It does not make the final feature decision for you. It creates a review queue with listing metadata, feature text, photo URLs, and blank columns for human evidence notes.
+
+The original example target used during development was:
 
 https://bobruthford.com/used-inventory
 
@@ -14,6 +16,14 @@ The scraper is intentionally conservative:
 - waits at least 2 seconds between page requests
 - caps collection at 50 listings by default
 - does not use login-only pages, bot-protection bypasses, credentialed sessions, or hidden APIs
+
+## Current Scope
+
+This is an MVP, not a universal car-marketplace crawler.
+
+It currently works best on dealership inventory pages that expose listing data in public HTML or JSON-LD. Sites with custom marketplace search APIs, bot protection, or very different JavaScript-rendered markup may need a dedicated parser adapter before useful rows can be generated.
+
+Known limitation: CarGurus search URLs can be rendered with Playwright after optional setup, but the current parser does not yet extract CarGurus result cards into rows.
 
 ## Setup
 
@@ -104,6 +114,16 @@ The code is split so it can grow without becoming a one-off script:
 - `web_gui.py` owns the local browser interface and calls the same scraper workflow.
 
 No secrets are required. Do not add API keys, cookies, dealership admin credentials, or authenticated scraping flows to this repo. Generated CSV files are ignored by default because inventory snapshots are time-sensitive and should be regenerated for each audit.
+
+## Public Repo Safety
+
+This project is intended to be safe to host publicly:
+
+- no API keys or credentials are required
+- generated CSV inventory snapshots are ignored by Git
+- browser automation is optional and only used for normal rendering
+- the scraper does not attempt to bypass bot protection
+- public deployment is not required; the GUI runs locally on `127.0.0.1`
 
 ## Validation
 
