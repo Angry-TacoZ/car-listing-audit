@@ -52,3 +52,21 @@ def test_render_page_includes_listing_preview() -> None:
     assert "Example Dealer" in html
     assert "adaptive cruise control" in html
     assert "Wrote 1 listing." in html
+
+
+def test_render_page_preserves_form_values_on_error() -> None:
+    html = render_page(
+        start_url="https://example.test/used",
+        output_path="example.csv",
+        max_listings=3,
+        delay_seconds=2.5,
+        visit_detail_pages=False,
+        use_playwright_fallback=False,
+        error="No listings found",
+    )
+
+    assert 'value="https://example.test/used"' in html
+    assert 'value="example.csv"' in html
+    assert 'value="3"' in html
+    assert 'value="2.5"' in html
+    assert "No listings found" in html

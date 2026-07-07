@@ -225,6 +225,7 @@ class AuditGuiHandler(BaseHTTPRequestHandler):
         if self.path != "/run":
             self.send_error(HTTPStatus.NOT_FOUND)
             return
+        config: dict[str, object] = {}
         try:
             length = int(self.headers.get("Content-Length", "0"))
             if length > 20_000:
@@ -242,10 +243,19 @@ class AuditGuiHandler(BaseHTTPRequestHandler):
             output_path.parent.mkdir(parents=True, exist_ok=True)
             write_csv(listings, output_path)
             acc_count = sum(1 for listing in listings if listing.has_acc_keyword == "true")
-            message = f"Wrote {len(listings)} listings to {output_path}. ACC keyword hits: {acc_count}."
+            if listings:
+                message = f"Wrote {len(listings)} listings to {output_path}. ACC keyword hits: {acc_count}."
+            else:
+                message = (
+                    f"Wrote 0 listings to {output_path}. The page loaded, but no supported inventory data was found. "
+                    "This site may need a dedicated parser adapter."
+                )
             self._send_html(render_page(listings=listings, message=message, **config))
         except Exception as exc:
-            self._send_html(render_page(error=str(exc)), status=HTTPStatus.BAD_REQUEST)
+            if config:
+                self._send_html(render_page(error=str(exc), **config), status=HTTPStatus.BAD_REQUEST)
+            else:
+                self._send_html(render_page(error=str(exc)), status=HTTPStatus.BAD_REQUEST)
 
     def log_message(self, format: str, *args: object) -> None:
         return
