@@ -5,7 +5,7 @@ from dataclasses import asdict, dataclass, field
 
 @dataclass
 class VehicleListing:
-    dealer_name: str = "Bob Ruth Ford"
+    dealer_name: str = ""
     stock_number: str = ""
     year: str = ""
     make: str = ""
@@ -50,4 +50,3 @@ CSV_COLUMNS = [
     "verdict",
     "notes",
 ]
-

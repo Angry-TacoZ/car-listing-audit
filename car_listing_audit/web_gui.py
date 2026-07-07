@@ -10,7 +10,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs
 
-from .bob_ruth_scraper import DEFAULT_OUTPUT, START_URL, collect_listings, write_csv
+from .scraper import DEFAULT_OUTPUT, START_URL, collect_listings, write_csv
 from .models import CSV_COLUMNS, VehicleListing
 
 
@@ -303,4 +303,3 @@ def _first(fields: dict[str, list[str]], name: str, default: str) -> str:
 
 if __name__ == "__main__":
     main()
-

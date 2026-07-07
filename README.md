@@ -1,8 +1,8 @@
-# Car Listing ACC Audit Scraper
+# Adaptive Cruise Listing Audit
 
-Python MVP scraper for building a manual-review CSV from public used-car listings on Bob Ruth Ford's inventory site.
+Python MVP scraper for building a manual-review CSV from public used-car inventory pages.
 
-The first audit target is:
+The included example target is:
 
 https://bobruthford.com/used-inventory
 
@@ -42,19 +42,19 @@ This starts a local-only server at `http://127.0.0.1:8765/` and opens it in your
 Command line:
 
 ```powershell
-.\.venv\Scripts\python.exe -m car_listing_audit.bob_ruth_scraper
+.\.venv\Scripts\python.exe -m car_listing_audit.scraper
 ```
 
 This writes:
 
 ```text
-bob_ruth_acc_audit_seed.csv
+acc_audit_seed.csv
 ```
 
 Useful smaller smoke run:
 
 ```powershell
-.\.venv\Scripts\python.exe -m car_listing_audit.bob_ruth_scraper --max-listings 3 --output smoke.csv
+.\.venv\Scripts\python.exe -m car_listing_audit.scraper --max-listings 3 --output smoke.csv
 ```
 
 ## CSV Fields
@@ -100,7 +100,7 @@ The code is split so it can grow without becoming a one-off script:
 
 - `polite_http.py` owns robots checks and request pacing.
 - `parsing.py` owns HTML and JSON-LD extraction.
-- `bob_ruth_scraper.py` owns the command-line workflow.
+- `scraper.py` owns the command-line workflow.
 - `web_gui.py` owns the local browser interface and calls the same scraper workflow.
 
 No secrets are required. Do not add API keys, cookies, dealership admin credentials, or authenticated scraping flows to this repo. Generated CSV files are ignored by default because inventory snapshots are time-sensitive and should be regenerated for each audit.
@@ -116,7 +116,7 @@ Run unit tests:
 Run a live smoke scrape:
 
 ```powershell
-.\.venv\Scripts\python.exe -m car_listing_audit.bob_ruth_scraper --max-listings 3 --output smoke.csv
+.\.venv\Scripts\python.exe -m car_listing_audit.scraper --max-listings 3 --output smoke.csv
 ```
 
 Before making a public GitHub repo, also run a basic secret scan:

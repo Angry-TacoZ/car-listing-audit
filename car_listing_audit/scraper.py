@@ -11,7 +11,7 @@ from .polite_http import PoliteSession, RobotsPolicy, same_site_base
 
 
 START_URL = "https://bobruthford.com/used-inventory"
-DEFAULT_OUTPUT = "bob_ruth_acc_audit_seed.csv"
+DEFAULT_OUTPUT = "acc_audit_seed.csv"
 
 
 def collect_listings(
@@ -100,7 +100,7 @@ def write_csv(listings: list[VehicleListing], output_path: Path) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Build a Bob Ruth Ford ACC audit seed CSV.")
+    parser = argparse.ArgumentParser(description="Build an ACC audit seed CSV from a public used-car inventory page.")
     parser.add_argument("--start-url", default=START_URL)
     parser.add_argument("--max-listings", type=int, default=50)
     parser.add_argument("--delay-seconds", type=float, default=2.0)

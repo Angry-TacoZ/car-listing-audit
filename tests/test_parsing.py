@@ -1,5 +1,5 @@
 from car_listing_audit.models import VehicleListing
-from car_listing_audit.bob_ruth_scraper import collect_listings
+from car_listing_audit.scraper import collect_listings
 from car_listing_audit.parsing import (
     detect_acc_keywords,
     merge_detail_page,
@@ -61,7 +61,7 @@ def test_merge_detail_page_prefers_structured_data_and_features() -> None:
       "offers": {
         "@type": "Offer",
         "price": 23990,
-        "seller": {"@type": "AutoDealer", "name": "Bob Ruth Ford"}
+        "seller": {"@type": "AutoDealer", "name": "Example Dealer"}
       },
       "image": ["https://static.overfuel.com/photos/437/1/photo.webp"]
     }
@@ -80,7 +80,7 @@ def test_merge_detail_page_prefers_structured_data_and_features() -> None:
 
     merge_detail_page(listing, html, listing.listing_url)
 
-    assert listing.dealer_name == "Bob Ruth Ford"
+    assert listing.dealer_name == "Example Dealer"
     assert listing.stock_number == "PV22623Z"
     assert listing.year == "2023"
     assert listing.make == "Nissan"
@@ -124,10 +124,10 @@ def test_collect_listings_reports_progress_when_dependencies_are_mocked(monkeypa
         listing.vin = "TESTVIN1234567890"
         return listing
 
-    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.RobotsPolicy", FakeRobotsPolicy)
-    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.PoliteSession", FakeSession)
-    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.parse_inventory_page", fake_parse_inventory_page)
-    monkeypatch.setattr("car_listing_audit.bob_ruth_scraper.merge_detail_page", fake_merge_detail_page)
+    monkeypatch.setattr("car_listing_audit.scraper.RobotsPolicy", FakeRobotsPolicy)
+    monkeypatch.setattr("car_listing_audit.scraper.PoliteSession", FakeSession)
+    monkeypatch.setattr("car_listing_audit.scraper.parse_inventory_page", fake_parse_inventory_page)
+    monkeypatch.setattr("car_listing_audit.scraper.merge_detail_page", fake_merge_detail_page)
 
     messages = []
     listings = collect_listings(
