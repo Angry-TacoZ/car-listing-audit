@@ -12,6 +12,11 @@ from .polite_http import PoliteSession, RobotsPolicy, same_site_base
 
 START_URL = "https://bobruthford.com/used-inventory"
 DEFAULT_OUTPUT = "acc_audit_seed.csv"
+BOT_PROTECTION_MARKERS = [
+    "Verification Required",
+    "Fastly Bot Management Challenge",
+    "fastly-challenge",
+]
 
 
 def collect_listings(
@@ -38,11 +43,13 @@ def collect_listings(
         report(f"Fetching inventory page: {next_url}")
         response = session.get(next_url, robots)
         response.raise_for_status()
+        ensure_not_bot_protection(response.text, next_url)
         page_listings, discovered_next_url = parse_inventory_page(response.text, next_url)
 
         if not page_listings and use_playwright_fallback:
             report("Static HTML had no listings; trying Playwright fallback")
             rendered_html = render_with_playwright(next_url, robots)
+            ensure_not_bot_protection(rendered_html, next_url)
             page_listings, discovered_next_url = parse_inventory_page(rendered_html, next_url)
 
         for listing in page_listings:
@@ -63,6 +70,7 @@ def collect_listings(
             report(f"Fetching detail page {index}/{len(listings)}: {listing.listing_url}")
             detail_response = session.get(listing.listing_url, robots)
             detail_response.raise_for_status()
+            ensure_not_bot_protection(detail_response.text, listing.listing_url)
             merge_detail_page(listing, detail_response.text, listing.listing_url)
     else:
         for listing in listings:
@@ -70,6 +78,14 @@ def collect_listings(
 
     report(f"Collected {len(listings)} listings")
     return listings
+
+
+def ensure_not_bot_protection(html: str, url: str) -> None:
+    if any(marker.lower() in html.lower() for marker in BOT_PROTECTION_MARKERS):
+        raise RuntimeError(
+            "The site returned a bot-protection verification page instead of public listing data. "
+            f"Stopping without bypassing protection for {url}."
+        )
 
 
 def render_with_playwright(url: str, robots: RobotsPolicy) -> str:

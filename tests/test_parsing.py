@@ -1,5 +1,6 @@
 from car_listing_audit.models import VehicleListing
 from car_listing_audit.scraper import collect_listings
+from car_listing_audit.scraper import ensure_not_bot_protection
 from car_listing_audit.parsing import (
     detect_acc_keywords,
     merge_detail_page,
@@ -141,3 +142,15 @@ def test_collect_listings_reports_progress_when_dependencies_are_mocked(monkeypa
     assert any("Fetching inventory page" in message for message in messages)
     assert any("Fetching detail page 1/1" in message for message in messages)
     assert messages[-1] == "Collected 1 listings"
+
+
+def test_bot_protection_page_stops_without_bypass() -> None:
+    html = "<title>Verification Required</title><div>Fastly Bot Management Challenge</div>"
+
+    try:
+        ensure_not_bot_protection(html, "https://example.test/search")
+    except RuntimeError as exc:
+        assert "bot-protection verification page" in str(exc)
+        assert "Stopping without bypassing protection" in str(exc)
+    else:
+        raise AssertionError("Expected bot protection detection to raise")
