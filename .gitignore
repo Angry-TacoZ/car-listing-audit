@@ -1,0 +1,8 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# Generated local audit output. Regenerate with the scraper rather than
+# treating a time-sensitive inventory snapshot as source code.
+*.csv
