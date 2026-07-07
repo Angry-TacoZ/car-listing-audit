@@ -1,10 +1,12 @@
 # Adaptive Cruise Listing Audit
 
-Python MVP scraper for building a manual-review CSV from public used-car inventory pages.
+Python MVP for building manual-review CSV reports from used-car listing data.
 
-The tool is designed to help audit whether a used-car listing appears to mention adaptive cruise control or related feature names, then produce a spreadsheet for manual verification. It does not make the final feature decision for you. It creates a review queue with listing metadata, feature text, photo URLs, and blank columns for human evidence notes.
+The tool is designed to help audit whether a used-car listing claims adaptive cruise control or related feature names, then produce a report for visual verification. The product direction is a B2B accuracy workflow for marketplaces and aggregators: a partner provides approved listing data and image URLs, the tool reviews ACC claims, and the output flags listings that pass, fail, remain uncertain, or need manual review.
 
-The original example target used during development was:
+The motivating CarGurus proof of concept is feature-filter accuracy. A listing may claim ACC, but steering-wheel photos can show only standard cruise buttons and no distance-control buttons. This tool is meant to turn that kind of mismatch into a repeatable QA report.
+
+The original public dealership scrape target used during development was:
 
 https://bobruthford.com/used-inventory
 
@@ -21,9 +23,12 @@ The scraper is intentionally conservative:
 
 This is an MVP, not a universal car-marketplace crawler.
 
-It currently works best on dealership inventory pages that expose listing data in public HTML or JSON-LD. Sites with custom marketplace search APIs, bot protection, or very different JavaScript-rendered markup may need a dedicated parser adapter before useful rows can be generated.
+It has two workflows:
 
-Known limitation: CarGurus search URLs can be rendered with Playwright after optional setup, but the current parser does not yet extract CarGurus result cards into rows.
+- Partner batch audit: preferred for CarGurus-style marketplace PoCs using approved exports or feeds.
+- Public dealership URL scrape: legacy helper for dealership inventory pages that expose listing data in public HTML or JSON-LD.
+
+Known limitation: CarGurus public search URLs return bot-protection verification pages to automated requests. This project intentionally does not bypass that protection. Use a partner export/feed, manually curated sample file, or approved API instead.
 
 ## Setup
 
@@ -49,7 +54,15 @@ Local browser GUI:
 
 This starts a local-only server at `http://127.0.0.1:8765/` and opens it in your browser.
 
-Command line:
+Partner batch audit from the command line:
+
+```powershell
+.\.venv\Scripts\python.exe -m car_listing_audit.partner_audit --input examples\sample_partner_batch.json --output partner_acc_audit_report.csv
+```
+
+The default vision provider is `manual`, which creates a safe manual-review report without any model API key. The optional `openai` provider is intended for local/server-side use only with a private API key; never commit keys or generated secrets.
+
+Public dealership scrape from the command line:
 
 ```powershell
 .\.venv\Scripts\python.exe -m car_listing_audit.scraper
@@ -68,6 +81,29 @@ Useful smaller smoke run:
 ```
 
 ## CSV Fields
+
+### Partner Audit Report
+
+The partner batch audit report includes:
+
+- `listing_id`
+- `listing_url`
+- `vehicle`
+- `claimed_feature`
+- `verdict`
+- `confidence`
+- `evidence_summary`
+- `evidence_photo_urls`
+- `review_notes`
+
+Verdicts are:
+
+- `pass`
+- `fail`
+- `uncertain`
+- `manual_review`
+
+### Public Dealership Seed CSV
 
 The output includes listing data:
 
@@ -111,6 +147,7 @@ The code is split so it can grow without becoming a one-off script:
 - `polite_http.py` owns robots checks and request pacing.
 - `parsing.py` owns HTML and JSON-LD extraction.
 - `scraper.py` owns the command-line workflow.
+- `batch.py`, `audit.py`, `vision.py`, and `partner_audit.py` own approved partner-feed ingestion and ACC audit reporting.
 - `web_gui.py` owns the local browser interface and calls the same scraper workflow.
 
 No secrets are required. Do not add API keys, cookies, dealership admin credentials, or authenticated scraping flows to this repo. Generated CSV files are ignored by default because inventory snapshots are time-sensitive and should be regenerated for each audit.
@@ -137,6 +174,12 @@ Run a live smoke scrape:
 
 ```powershell
 .\.venv\Scripts\python.exe -m car_listing_audit.scraper --max-listings 3 --output smoke.csv
+```
+
+Run the synthetic partner batch sample:
+
+```powershell
+.\.venv\Scripts\python.exe -m car_listing_audit.partner_audit --input examples\sample_partner_batch.json --output partner_acc_audit_report.csv
 ```
 
 Before making a public GitHub repo, also run a basic secret scan:

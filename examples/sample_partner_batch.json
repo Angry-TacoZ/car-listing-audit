@@ -1,0 +1,33 @@
+{
+  "listings": [
+    {
+      "listing_id": "synthetic-mini-001",
+      "listing_url": "https://example.invalid/listings/synthetic-mini-001",
+      "year": "2024",
+      "make": "Mini",
+      "model": "Cooper",
+      "trim": "S",
+      "vin": "SYNTHETICVIN00001",
+      "stock_number": "DEMO-001",
+      "claimed_features": "Adaptive cruise control | Heated seats",
+      "photo_urls": [
+        "https://example.invalid/images/synthetic-mini-steering-wheel.jpg",
+        "https://example.invalid/images/synthetic-mini-window-sticker.jpg"
+      ]
+    },
+    {
+      "listing_id": "synthetic-suv-002",
+      "listing_url": "https://example.invalid/listings/synthetic-suv-002",
+      "year": "2023",
+      "make": "Example",
+      "model": "SUV",
+      "trim": "Touring",
+      "vin": "SYNTHETICVIN00002",
+      "stock_number": "DEMO-002",
+      "claimed_features": "Blind spot monitor | Active cruise control",
+      "photo_urls": [
+        "https://example.invalid/images/synthetic-suv-steering-wheel.jpg"
+      ]
+    }
+  ]
+}

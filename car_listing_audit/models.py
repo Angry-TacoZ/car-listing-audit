@@ -50,3 +50,34 @@ CSV_COLUMNS = [
     "verdict",
     "notes",
 ]
+
+
+@dataclass
+class PartnerAuditRow:
+    listing_id: str
+    listing_url: str
+    vehicle: str
+    claimed_feature: str
+    verdict: str
+    confidence: str
+    evidence_summary: str
+    evidence_photo_urls: list[str] = field(default_factory=list)
+    review_notes: str = ""
+
+    def to_csv_row(self) -> dict[str, str]:
+        row = asdict(self)
+        row["evidence_photo_urls"] = " | ".join(self.evidence_photo_urls)
+        return row
+
+
+PARTNER_AUDIT_COLUMNS = [
+    "listing_id",
+    "listing_url",
+    "vehicle",
+    "claimed_feature",
+    "verdict",
+    "confidence",
+    "evidence_summary",
+    "evidence_photo_urls",
+    "review_notes",
+]
