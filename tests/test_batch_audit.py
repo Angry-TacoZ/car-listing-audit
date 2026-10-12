@@ -47,6 +47,19 @@ def test_load_partner_batch_json_valid_rows(tmp_path) -> None:
     assert listings[0].claimed_acc_features == ["radar cruise"]
 
 
+def test_load_partner_batch_json_accepts_commas_inside_photo_url(tmp_path) -> None:
+    path = tmp_path / "partner.json"
+    comma_url = "https://img.test/image/upload/w_800,q_auto/wheel,front.jpg"
+    path.write_text(
+        json.dumps([{"listing_id": "cg-3", "claimed_features": "Adaptive cruise control", "photo_urls": [comma_url]}]),
+        encoding="utf-8",
+    )
+
+    listings = load_partner_batch(path)
+
+    assert listings[0].photo_urls == [comma_url]
+
+
 def test_load_partner_batch_rejects_missing_required_columns(tmp_path) -> None:
     path = tmp_path / "partner.csv"
     path.write_text("listing_id,claimed_features\ncg-1,Adaptive cruise control\n", encoding="utf-8")
@@ -79,6 +92,13 @@ def test_parse_photo_urls_rejects_comma_delimited_values() -> None:
         assert "pipe-delimited" in str(exc)
     else:
         raise AssertionError("Expected comma-delimited photo URL validation to fail")
+
+
+def test_parse_photo_urls_accepts_commas_inside_url_values() -> None:
+    comma_url = "https://img.test/image/upload/w_800,q_auto/wheel,front.jpg"
+
+    assert parse_photo_urls([comma_url]) == [comma_url]
+    assert parse_photo_urls(comma_url) == [comma_url]
 
 
 def test_audit_partner_listings_filters_to_acc_claims(tmp_path) -> None:
@@ -132,4 +152,38 @@ def test_run_partner_batch_audit_writes_stable_report_columns(tmp_path) -> None:
         "evidence_photo_urls",
         "review_notes",
     ]
+
+
+def test_run_partner_batch_audit_rejects_same_input_and_output_file(tmp_path) -> None:
+    input_path = tmp_path / "partner.csv"
+    original = (
+        "listing_id,claimed_features,photo_urls,extra_partner_data\n"
+        "cg-1,Adaptive cruise control,https://img.test/1.jpg,keep-me\n"
+    )
+    input_path.write_text(original, encoding="utf-8")
+
+    try:
+        run_partner_batch_audit(input_path, input_path, ManualReviewVisionClient())
+    except ValueError as exc:
+        assert "different files" in str(exc)
+    else:
+        raise AssertionError("Expected identical input and output paths to be rejected")
+
+    assert input_path.read_text(encoding="utf-8") == original
+
+
+def test_run_partner_batch_audit_rejects_output_path_alias(tmp_path) -> None:
+    input_path = tmp_path / "partner.csv"
+    input_path.write_text(
+        "listing_id,claimed_features,photo_urls\ncg-1,Adaptive cruise control,https://img.test/1.jpg\n",
+        encoding="utf-8",
+    )
+    output_alias = tmp_path / "." / "partner.csv"
+
+    try:
+        run_partner_batch_audit(input_path, output_alias, ManualReviewVisionClient())
+    except ValueError as exc:
+        assert "different files" in str(exc)
+    else:
+        raise AssertionError("Expected aliased input and output paths to be rejected")
 

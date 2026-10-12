@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import csv
 import json
+import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -110,10 +111,9 @@ def parse_photo_urls(value: object) -> list[str]:
         text = normalize_text(str(value or ""))
         if not text:
             return []
+        if re.search(r",\s*https?://", text, flags=re.IGNORECASE):
+            raise ValueError("photo_urls must be pipe-delimited in CSV, not comma-delimited.")
         raw_values = [part.strip() for part in text.replace("\n", "|").split("|")]
 
-    urls = unique_preserve_order(raw_values)
-    if any("," in url for url in urls):
-        raise ValueError("photo_urls must be pipe-delimited in CSV, not comma-delimited.")
-    return urls
+    return unique_preserve_order(raw_values)
 

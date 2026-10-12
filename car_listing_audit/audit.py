@@ -81,10 +81,23 @@ def audit_partner_listings(listings: list[PartnerListing], vision_client: Vision
 
 
 def run_partner_batch_audit(input_path: Path, output_path: Path, vision_client: VisionClient) -> AuditSummary:
+    _ensure_distinct_input_and_output(input_path, output_path)
     listings = load_partner_batch(input_path)
     rows, summary = audit_partner_listings(listings, vision_client)
     write_partner_audit_csv(rows, output_path)
     return summary
+
+
+def _ensure_distinct_input_and_output(input_path: Path, output_path: Path) -> None:
+    if input_path.resolve() == output_path.resolve():
+        raise ValueError("Input and output paths must refer to different files.")
+    if input_path.exists() and output_path.exists():
+        try:
+            if input_path.samefile(output_path):
+                raise ValueError("Input and output paths must refer to different files.")
+        except OSError:
+            # Resolved path equality above still protects ordinary path aliases.
+            pass
 
 
 def write_partner_audit_csv(rows: list[PartnerAuditRow], output_path: Path) -> None:

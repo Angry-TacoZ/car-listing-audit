@@ -82,6 +82,8 @@ Useful smaller smoke run:
 
 ## CSV Fields
 
+Partner batch inputs may be CSV or JSON. CSV `photo_urls` cells use `|` between URLs; commas inside a URL are allowed. JSON `photo_urls` values are arrays of URL strings. Keep the input feed and output report at different paths so the original partner data is preserved.
+
 ### Partner Audit Report
 
 The partner batch audit report includes:
