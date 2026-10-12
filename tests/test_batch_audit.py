@@ -1,5 +1,6 @@
 import csv
 import json
+import pytest
 
 from car_listing_audit.audit import audit_partner_listings, run_partner_batch_audit
 from car_listing_audit.batch import load_partner_batch, parse_photo_urls
@@ -58,6 +59,18 @@ def test_load_partner_batch_json_accepts_commas_inside_photo_url(tmp_path) -> No
     listings = load_partner_batch(path)
 
     assert listings[0].photo_urls == [comma_url]
+
+
+@pytest.mark.parametrize("photo_urls", [[None], [123], [""], [" "]])
+def test_load_partner_batch_json_rejects_invalid_photo_entries(tmp_path, photo_urls) -> None:
+    path = tmp_path / "partner.json"
+    path.write_text(
+        json.dumps([{"listing_id": "cg-4", "claimed_features": "Adaptive cruise control", "photo_urls": photo_urls}]),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match=r"Batch row 1: photo_urls entries must be nonempty strings"):
+        load_partner_batch(path)
 
 
 def test_load_partner_batch_rejects_missing_required_columns(tmp_path) -> None:

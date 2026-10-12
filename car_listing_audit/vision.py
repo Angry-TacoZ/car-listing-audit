@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import json
+import math
 import mimetypes
 import os
 from dataclasses import dataclass
@@ -107,14 +108,7 @@ class OpenAIVisionClient:
         response.raise_for_status()
         payload = response.json()
         output_text = extract_output_text(payload)
-        data = parse_model_json(output_text)
-        return VisionAuditResult(
-            verdict=str(data.get("verdict", "uncertain")),
-            confidence=str(data.get("confidence", "")),
-            evidence_summary=str(data.get("evidence_summary", "")),
-            evidence_photo_urls=[str(item) for item in data.get("evidence_photo_urls", [])],
-            review_notes=str(data.get("review_notes", "")),
-        )
+        return parse_model_result(output_text, listing)
 
 
 def build_acc_prompt(listing: PartnerListing) -> str:
@@ -168,6 +162,57 @@ def parse_model_json(output_text: str) -> dict:
     if not isinstance(data, dict):
         raise RuntimeError("Vision model response must be a JSON object.")
     return data
+
+
+def parse_model_result(output_text: str, listing: PartnerListing) -> VisionAuditResult:
+    data = parse_model_json(output_text)
+    required_fields = {"verdict", "confidence", "evidence_summary", "evidence_photo_urls"}
+    missing_fields = sorted(required_fields - data.keys())
+    if missing_fields:
+        raise RuntimeError(f"Vision model response is missing required fields: {', '.join(missing_fields)}.")
+
+    verdict = data["verdict"]
+    if not isinstance(verdict, str) or verdict not in VALID_VERDICTS:
+        raise RuntimeError("Vision model response contains an unsupported verdict.")
+
+    confidence_value = data["confidence"]
+    if isinstance(confidence_value, bool) or not isinstance(confidence_value, (str, int, float)):
+        raise RuntimeError("Vision model confidence must be a number from 0 to 1.")
+    confidence = str(confidence_value).strip()
+    try:
+        confidence_number = float(confidence)
+    except ValueError as exc:
+        raise RuntimeError("Vision model confidence must be a number from 0 to 1.") from exc
+    if not math.isfinite(confidence_number) or not 0 <= confidence_number <= 1:
+        raise RuntimeError("Vision model confidence must be a number from 0 to 1.")
+
+    evidence_summary = data["evidence_summary"]
+    if not isinstance(evidence_summary, str) or not evidence_summary.strip():
+        raise RuntimeError("Vision model evidence_summary must be nonempty text.")
+
+    evidence_photo_urls = data["evidence_photo_urls"]
+    if not isinstance(evidence_photo_urls, list) or any(
+        not isinstance(item, str) or not item.strip() for item in evidence_photo_urls
+    ):
+        raise RuntimeError("Vision model evidence_photo_urls must be a list of nonempty strings.")
+    evidence_photo_urls = [item.strip() for item in evidence_photo_urls]
+    allowed_photo_urls = set(listing.photo_urls[:8])
+    if any(item not in allowed_photo_urls for item in evidence_photo_urls):
+        raise RuntimeError("Vision model evidence_photo_urls must reference supplied listing photos.")
+    if verdict in {"pass", "fail"} and not evidence_photo_urls:
+        raise RuntimeError("Conclusive vision model verdicts must cite at least one supplied listing photo.")
+
+    review_notes = data.get("review_notes", "")
+    if not isinstance(review_notes, str):
+        raise RuntimeError("Vision model review_notes must be text.")
+
+    return VisionAuditResult(
+        verdict=verdict,
+        confidence=confidence,
+        evidence_summary=evidence_summary.strip(),
+        evidence_photo_urls=evidence_photo_urls,
+        review_notes=review_notes.strip(),
+    )
 
 
 def create_vision_client(provider: str) -> VisionClient:

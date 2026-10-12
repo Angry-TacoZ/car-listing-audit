@@ -78,7 +78,10 @@ def load_partner_batch_json(path: Path) -> list[PartnerListing]:
 def parse_partner_row(row: dict, row_number: int) -> PartnerListing:
     listing_id = normalize_text(str(row.get("listing_id", "") or ""))
     claimed_features = normalize_text(str(row.get("claimed_features", "") or ""))
-    photo_urls = parse_photo_urls(row.get("photo_urls"))
+    try:
+        photo_urls = parse_photo_urls(row.get("photo_urls"))
+    except ValueError as exc:
+        raise ValueError(f"Batch row {row_number}: {exc}") from exc
 
     missing = []
     if not listing_id:
@@ -106,14 +109,18 @@ def parse_partner_row(row: dict, row_number: int) -> PartnerListing:
 
 def parse_photo_urls(value: object) -> list[str]:
     if isinstance(value, list):
-        raw_values = [str(item) for item in value]
-    else:
-        text = normalize_text(str(value or ""))
+        if any(not isinstance(item, str) or not item.strip() for item in value):
+            raise ValueError("photo_urls entries must be nonempty strings.")
+        raw_values = value
+    elif isinstance(value, str):
+        text = normalize_text(value)
         if not text:
             return []
         if re.search(r",\s*https?://", text, flags=re.IGNORECASE):
             raise ValueError("photo_urls must be pipe-delimited in CSV, not comma-delimited.")
         raw_values = [part.strip() for part in text.replace("\n", "|").split("|")]
+    else:
+        raise ValueError("photo_urls must be a string or a list of nonempty strings.")
 
     return unique_preserve_order(raw_values)
 
