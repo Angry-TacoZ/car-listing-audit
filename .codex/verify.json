@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "scope": "private-local-single-user",
+  "checks": [
+    {
+      "name": "pytest",
+      "command": ".venv/Scripts/python.exe",
+      "arguments": ["-m", "pytest"],
+      "timeout_seconds": 600
+    },
+    {
+      "name": "compileall",
+      "command": ".venv/Scripts/python.exe",
+      "arguments": ["-m", "compileall", "-q", "car_listing_audit", "tests"],
+      "timeout_seconds": 600
+    }
+  ]
+}

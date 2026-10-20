@@ -1,5 +1,6 @@
 from car_listing_audit.models import VehicleListing
-from car_listing_audit.web_gui import parse_run_form, render_page
+from car_listing_audit.models import PartnerAuditRow
+from car_listing_audit.web_gui import parse_partner_form, parse_run_form, render_page
 
 
 def test_parse_run_form_validates_bounds() -> None:
@@ -70,3 +71,53 @@ def test_render_page_preserves_form_values_on_error() -> None:
     assert 'value="3"' in html
     assert 'value="2.5"' in html
     assert "No listings found" in html
+
+
+def test_render_page_partner_mode_preserves_values_and_renders_summary() -> None:
+    html = render_page(
+        mode="partner_batch",
+        batch_path="partner.csv",
+        partner_output_path="report.csv",
+        vision_provider="mock",
+        error="Batch file not found",
+    )
+
+    assert "Partner batch upload" in html
+    assert 'value="partner.csv"' in html
+    assert 'value="report.csv"' in html
+    assert 'value="mock" selected' in html
+    assert "CarGurus public search pages are not scraped" in html
+    assert "Batch file not found" in html
+
+
+def test_parse_partner_form_rejects_missing_file_path() -> None:
+    try:
+        parse_partner_form("partner_output_path=report.csv&vision_provider=manual")
+    except ValueError as exc:
+        assert "Partner batch file is required" in str(exc)
+    else:
+        raise AssertionError("Expected partner batch path validation to fail")
+
+
+def test_render_page_partner_report_table() -> None:
+    html = render_page(
+        mode="partner_batch",
+        partner_rows=[
+            PartnerAuditRow(
+                listing_id="cg-1",
+                listing_url="https://example.test/1",
+                vehicle="2024 Mini Cooper S",
+                claimed_feature="adaptive cruise control",
+                verdict="fail",
+                confidence="0.91",
+                evidence_summary="Distance buttons missing.",
+                evidence_photo_urls=["https://img.test/wheel.jpg"],
+            )
+        ],
+        message="Audited 1 ACC-claimed listings.",
+    )
+
+    assert "cg-1" in html
+    assert "2024 Mini Cooper S" in html
+    assert "Distance buttons missing." in html
+    assert "https://img.test/wheel.jpg" in html
